@@ -2,102 +2,106 @@
 import React, { useState,useEffect } from "react";
 import "./App.css";
 import db from "./config/db";
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state so the next render will show the fallback UI.
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // You can also log the error to an error reporting service
+    // logErrorToMyService(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // You can render any custom fallback UI
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children; 
+  }
+}
+  
   
 function App() {
-  // const [customerName, setCustomerName] = useState("");
-  // const [customerPassword, setCustomerPassword] = useState("");
   
-  // // push and pull data
-  // var docRef = db.collection("customersData").doc("1ju4q6RYGonL1PhjHVVP");
-  // docRef.get().then((doc) => {
-  //     if (doc.exists) {
-  //         console.log("Document data:", doc.data());
-  //     } else {
-  //         // doc.data() will be undefined in this case
-  //         console.log("No such document!");
-  //     }
-  // }).catch((error) => {
-  //     console.log("Error getting document:", error);
-  // });
-
-  // const submit = (e) => {
-  //   e.preventDefault();
-  //   db.collection("customersData").add({
-  //     name: customerName,
-  //     password: customerPassword,
-  //   });
-  
-  //   setCustomerName("");
-  //   setCustomerPassword("");
-  // };
+  const openDate = new Date();
   const [noteHeader, setNoteHeader] = useState("");
   const [noteContent, setNoteContent] = useState("");
+  const [noteDate, setNoteDate] = useState([openDate.getFullYear().toString(),pad(openDate.getMonth()+1),pad(openDate.getDate())]);
   const [noteList, setNoteList] = useState([])
   let notesReference = [];
   
-    
-    
-    //call a call .collection on the doc or do I need to call it on the reference?
-
-  //get one note.
   
-  // room to go deeper to each note 
   
-  let fetchNotes = (year,month,day) => {
-    var yearRef = db.collection("Years").doc(year);     
-    var monthRef = yearRef.collection("months").doc(month);
-    var dayRef = monthRef.collection("days").doc(day);
+  const fetchNotes = (year,month,day) => {
+    const yearRef = db.collection("Years").doc(year);     
+    const monthRef = yearRef.collection("months").doc(month);
+    const dayRef = monthRef.collection("days").doc(day);
     
     let notes = [];
     dayRef.collection("notes").get().then((querySnapshot) => 
     {
       for(let doc_item of querySnapshot.docs){
-        console.log(doc_item.data())
-        
+        // console.log(doc_item.data())
       }
     }).catch((error) => {
         console.log("Error getting documents: ", error);
     });
     }
   
-  let fetchDays = () => {
+  const fetchDays = () => {
     
   }
   
-  let fetchMonths = () => {
+  const fetchMonths = () => {
     
   }
   
-  let fetchYears = () => {
+  const fetchYears = () => {
     
   }
-  
-  //get notes for one day 
-
-    fetchNotes("2022","01-2022",`${pad(1)}`)
-  
-  //pad the date fields
   function pad(d) {
     return (d < 10) ? '0' + d.toString() : d.toString();
   }
 
-  let handleSave= () => (e) => {
+  const handleSave= () => (e) => {
     
-    let thisDate = new Date()
 
-    var yearRefNow = db.collection("Years").doc(thisDate.getFullYear().toString());     
-    var monthRefNow = yearRefNow.collection("months").doc((thisDate.getMonth()+1).toString());
-    var dayRefNow = monthRefNow.collection("days").doc(thisDate.getDate().toString());
-  
-      
+    //also note date
+    console.log("title",document.getElementById("note-title"))
+    console.log("content",document.getElementById("note-content"))
+    console.log("date",document.getElementById("note-date"))
+    console.log("date.value",document.getElementById("note-date").value)
+    console.log("date.value split",document.getElementById("note-date").value.split('-'))
     
-    setNoteHeader(e.target.firstChild.value);
-    setNoteContent(e.target.childNodes[2].value);
+    setNoteHeader(document.getElementById("note-title").value);
+    setNoteContent(document.getElementById("note-content").value);
+    setNoteDate(document.getElementById("note-date").value.split("-"))
+
+
+    const saveTime = new Date() //going to leave this here for later
+    
+    const year = noteDate[0];
+    const month = noteDate[1];
+    const day = noteDate[2];
+    
+    const yearRefNow = db.collection("Years").doc(year);     
+    const monthRefNow = yearRefNow.collection("months").doc(month);
+    const dayRefNow = monthRefNow.collection("days").doc(day);
+    
     
     console.log("Date:","going to work on this...");
-    console.log("Year",thisDate.getFullYear())
-    console.log("Month",(thisDate.getMonth()+1))
-    console.log("Day",thisDate.getDate())
+    console.log("Year",year)
+    console.log("Month",month)
+    console.log("Day", day)
     
     const notesPromise = dayRefNow.collection("notes").get()
     
@@ -110,7 +114,7 @@ function App() {
     dayRefNow.collection("notes").doc(size.toString()).set({
         header: noteHeader,
         body: noteContent,
-        date: "still Working on this"
+        date: noteDate
       });
     });
 
@@ -118,66 +122,57 @@ function App() {
 
   }
   
-  let handleClear={};
+  const handleClear={};
   
-  let handleLeave={};
+  const handleLeave={};
   
   
   return (
     //need to have a navigation, a dtails bar, a title, an input, and enter buton to save, a close button.
-    <div className="wrap">
-      <header>
-        <nav style={{textAlign:"center"}}>
-          <a href="#">New Note</a>
+    <ErrorBoundary>
+      <div className="wrap">
+        <header>
+          <nav style={{textAlign:"center"}}>
+            <a href="#">New Note</a>
+            <hr/>
+            <a href="#">Note List</a>
+            <hr/>
+            <a href="#">Calendar</a>
+            <hr/>
+            <a href="#">Preferences</a>
+            <hr/>
+            <a href="#">Back to website</a>
+            <hr/>
+          </nav>
+          <div className="details">
+          </div>
+        </header>
+        
+         
+        <form onSubmit= {handleSave()}>
+          <input id="note-date" type="date" name="trip-start"
+           defaultValue={`${noteDate[0]}-${noteDate[1]}-${noteDate[2]}`}
+           min="1990-01-01" max="2050-12-31"/>
+           <hr/>
+          <input id="note-title" defaultValue="note Title"/>
           <hr/>
-          <a href="#">Note List</a>
-          <hr/>
-          <a href="#">Calendar</a>
-          <hr/>
-          <a href="#">Preferences</a>
-          <hr/>
-          <a href="#">Back to website</a>
-          <hr/>
-        </nav>
-        <div className="details">
+          <textarea id="note-content" rows="4" cols="50" defaultValue="Write it out"/>
+          <br/>
+          <input type="submit" value="save" />
+         {/*<button onClick={handleClear}>Clear</button>*/}
+          {/*<button onClick={handleLeave}>Save and New</button>*/}
+        </form>
+        <div id="notes-list">
+          <ul>
+            {/*grab database notes and map to list*/}
+            <li>{ 1234 }</li>
+            <li>{}</li>
+            <li>{console.log()}</li>
+            <li>{}</li>
+          </ul>
         </div>
-      </header>
-      <form onSubmit= {handleSave()}>
-        <input defaultValue="note Title"/>
-        <hr/>
-        <textarea rows="4" cols="50" defaultValue="dummyText"/>
-        <br/>
-        <input type="submit" value="save" />
-       {/*<button onClick={handleClear}>Clear</button>*/}
-        {/*<button onClick={handleLeave}>Save and New</button>*/}
-      </form>
-      <div id="notes-list">
-        <ul>
-          {/*grab database notes and map to list*/}
-          <li>{ 123 }</li>
-          <li>{}</li>
-          <li>{console.log()}</li>
-          <li>{}</li>
-        </ul>
       </div>
-    </div>
-    // <div className="App">
-    //   <div className="App__form">
-    //     <input
-    //       type="text"
-    //       placeholder="Name"
-    //       value={customerName}
-    //       onChange={(e) => setCustomerName(e.target.value)}
-    //     />
-    //     <input
-    //       type="text"
-    //       placeholder="Password"
-    //       value={customerPassword}
-    //       onChange={(e) => setCustomerPassword(e.target.value)}
-    //     />
-    //     <button onClick={submit}>Submit</button>
-    //   </div>
-    // </div>
+    </ErrorBoundary>
   );
 }
 
