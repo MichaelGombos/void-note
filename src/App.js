@@ -35,7 +35,11 @@ function App() {
   const openDate = new Date();
   const [noteHeader, setNoteHeader] = useState("");
   const [noteContent, setNoteContent] = useState("");
-  const [noteDate, setNoteDate] = useState([openDate.getFullYear().toString(),pad(openDate.getMonth()+1),pad(openDate.getDate())]);
+  const [noteDate, setNoteDate] = useState({
+    year:openDate.getFullYear().toString(),
+    month:pad(openDate.getMonth()+1),
+    day:pad(openDate.getDate())
+  });
   const [noteList, setNoteList] = useState([])
   let notesReference = [];
   
@@ -84,24 +88,44 @@ function App() {
     
     setNoteHeader(document.getElementById("note-title").value);
     setNoteContent(document.getElementById("note-content").value);
-    setNoteDate(document.getElementById("note-date").value.split("-"))
+    
+    let dateChoice =  document.getElementById("note-date").value.split("-");
+    
+    let dateChoiceObject = {
+      year:dateChoice[0],
+      month:dateChoice[1],
+      day:dateChoice[2],
+    }
+    
+    setNoteDate(dateChoiceObject)
 
 
     const saveTime = new Date() //going to leave this here for later
     
-    const year = noteDate[0];
-    const month = noteDate[1];
-    const day = noteDate[2];
+    const saveYear = saveTime.getFullYear();
+    const saveMonth = saveTime.getMonth()+1;
+    const saveDay = saveTime.getDay();
+    const saveHour = saveTime.getHours();
+    const saveMinutes = saveTime.getMinutes();
     
-    const yearRefNow = db.collection("Years").doc(year);     
-    const monthRefNow = yearRefNow.collection("months").doc(month);
-    const dayRefNow = monthRefNow.collection("days").doc(day);
+    const saveTimeObject = {
+      year:saveYear,
+      month:saveMonth,
+      day:saveDay,
+      hour:saveHour,
+      minutes:saveMinutes
+    }
+    
+    
+    const yearRefNow = db.collection("Years").doc(noteDate.year);     
+    const monthRefNow = yearRefNow.collection("months").doc(noteDate.month);
+    const dayRefNow = monthRefNow.collection("days").doc(noteDate.day);
     
     
     console.log("Date:","going to work on this...");
-    console.log("Year",year)
-    console.log("Month",month)
-    console.log("Day", day)
+    console.log("Year",noteDate.year)
+    console.log("Month",noteDate.month)
+    console.log("Day", noteDate.day)
     
     const notesPromise = dayRefNow.collection("notes").get()
     
@@ -114,7 +138,8 @@ function App() {
     dayRefNow.collection("notes").doc(size.toString()).set({
         header: noteHeader,
         body: noteContent,
-        date: noteDate
+        noteDate: noteDate,
+        addedTime: saveTimeObject
       });
     });
 
@@ -151,7 +176,7 @@ function App() {
          
         <form onSubmit= {handleSave()}>
           <input id="note-date" type="date" name="trip-start"
-           defaultValue={`${noteDate[0]}-${noteDate[1]}-${noteDate[2]}`}
+           defaultValue={`${noteDate.year}-${noteDate.month}-${noteDate.day}`}
            min="1990-01-01" max="2050-12-31"/>
            <hr/>
           <input id="note-title" defaultValue="note Title"/>
