@@ -20,5 +20,4 @@ Check out this figma mockup of the landing page to app flow.
 https://www.figma.com/proto/2NgnJMkBPqoSfyo7K59A3Z/Void-Note-Design-File?node-id=26%3A182&scaling=min-zoom&page-id=0%3A1&starting-point-node-id=26%3A182
 
 ## Where am I an now?
-Skeleton form of the new note page created.
-Can preform push/pull requests to the database
+Currently working on the web application for this project
