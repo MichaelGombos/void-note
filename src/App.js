@@ -1,232 +1,337 @@
 import React, {
-    useState,
-    useEffect
-} from "react";
+  useState,
+  useEffect
+}
+from "react";
 import "./App.css";
 import db from "./config/db";
 
 class ErrorBoundary extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            hasError: false
-        };
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state so the next render will show the fallback UI.
+    return {
+      hasError: true
+    };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // You can also log the error to an error reporting service
+    // logErrorToMyService(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // You can render any custom fallback UI
+      return <h1>Something went wrong.</h1>;
     }
 
-    static getDerivedStateFromError(error) {
-        // Update state so the next render will show the fallback UI.
-        return {
-            hasError: true
-        };
-    }
-
-    componentDidCatch(error, errorInfo) {
-        // You can also log the error to an error reporting service
-        // logErrorToMyService(error, errorInfo);
-    }
-
-    render() {
-        if (this.state.hasError) {
-            // You can render any custom fallback UI
-            return <h1>Something went wrong.</h1>;
-        }
-
-        return this.props.children;
-    }
+    return this.props.children;
+  }
 }
 
-let i = 0;
+const DomNoteList = (props) => {
+  
+  const fullDataBase = props.noteList;
+  const years = fullDataBase.years;
+  years 
+  ? years.forEach(year => {
+    console.log(year.months)
+    year.months.forEach(month => {
+      console.log(month.days);
+      month.days.forEach(day => {
+        console.log(day.notes)
+        day.notes.forEach(note => {
+          console.log("note?",note.noteID,note)
+        })
+      })
+      })
+  }) 
+  : console.log("fail year")
+  
+  return(
+    
+    <div>
+    <h1>All Years </h1>
+    <ul>{years ? years.map(year => <li><DomYear year={year}/></li>) : "no Years found"}</ul>
+    </div>
+    )
+}
+const DomYear = (props) => {
+
+  const year = props.year;
+  const yearId = props.year.yearId; //props.year.yearID
+  //for every month in the year, pull a domMonth and append to the months array
+  const months = year.months;
+  //
+  //then append this months array to domYear Element
+  return (<div>
+  <h2>Year {yearId} </h2>
+  
+  <ul>{months ? months.map(month => <li><DomMonth month={month}/></li>) : "no months found"}</ul>
+  </div>)
+}
+
+const DomMonth = (props) => {
+
+  const monthId = props.month.monthId;
+  //for every day in the Month, pull a domDay and append to the days array
+  const days = props.month.days;
+  //then append this days array to domMonth Element
+  return (<div>
+  <h2>Month {monthId} </h2>
+  
+  <ul>{days ? days.map(day => <li><DomDay day={day}/></li>) : "no days found"}</ul>
+  </div>)
+}
+
+const DomDay = (props) => {
+
+  const dayId = props.day.dayId;
+  //for every note in the Day, pull a domNote and append to the notes array
+  const notes = props.day.notes;
+  //then append this notes array to domDay Element
+  return (<div>
+  <h3>Day {dayId}</h3>
+  
+  <ul>{notes ? notes.map(note => <li><DomNote note={note}/></li>) : "no notes found"}</ul>
+  </div>)
+}
+
+const DomNote = (props) => {
+
+  const noteId = "0";
+  const noteTitle = "Note Title";
+  const noteContent = "In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document or a typeface without relying on meaningful content. ";
+  const noteDateString = {
+    day: "16",
+    month: "03",
+    year: "2022"
+  }
+  const noteAddedTime = {
+    milliseconds: 622,
+    seconds: 36,
+    minutes: 51,
+    hour: 18,
+    day: 5,
+    month: 6,
+    year: 2022
+  }
+  return (<div>
+  <h4>{noteTitle}</h4>
+  <em>Note Date :: {noteDateString.year}-{noteDateString.month}-{noteDateString.day}</em>
+  <strong>{noteContent}</strong>
+  <em>Created on :: {noteAddedTime.year}-{noteAddedTime.month}-{noteAddedTime.day} @{noteAddedTime.hour}:{noteAddedTime.minutes}{noteAddedTime.hour > 12 ? "PM" : "AM"} [{noteAddedTime.seconds}{noteAddedTime.milliseconds}]</em>
+  </div>)
+}
 
 function App() {
 
-    const openDate = new Date();
-    const [noteHeader, setNoteHeader] = useState("");
-    const [noteContent, setNoteContent] = useState("");
-    const [noteDate, setNoteDate] = useState({
-        year: openDate.getFullYear().toString(),
-        month: pad(openDate.getMonth() + 1),
-        day: pad(openDate.getDate())
+  const openDate = new Date();
+  const [noteHeader, setNoteHeader] = useState("");
+  const [noteContent, setNoteContent] = useState("");
+  const [noteDate, setNoteDate] = useState({
+    year: openDate.getFullYear().toString(),
+    month: pad(openDate.getMonth() + 1),
+    day: pad(openDate.getDate())
+  });
+  const [noteList, setNoteList] = useState([])
+  let notesReference = [];
+
+  //grab all notes in one day
+  const fetchNotes = (year, month, day) => {
+    const yearRef = db.collection("years").doc(year);
+    const monthRef = yearRef.collection("months").doc(month);
+    const dayRef = monthRef.collection("days").doc(day);
+
+    let notes = [];
+    dayRef.collection("notes").get().then((querySnapshot) => {
+      for (let doc_item of querySnapshot.docs) {
+        // console.log(doc_item.data())
+      }
+    }).catch((error) => {
+      console.log("Error getting documents: ", error);
     });
-    const [noteList, setNoteList] = useState([])
-    let notesReference = [];
+  }
+
+  // let allNotes = [];
+
+  const fetchAllNotes = () => {
+
+    //array of all notes
+    let tempNoteList = [];
+
+    //object containing snapShot of database structure and data
+    let notesData = { years: [] };
+    //tempYearList is going to contain an array of year objects .
+    //add resolve to handle caching l8er
+
+    //check if noteList state is empty
+
+    if (noteList.length == 0) {
+
+      db
+        .collection("years")
+        .get()
+        .then((querySnapshotYears) => {
+          for (let yearIndex = 0; yearIndex < querySnapshotYears.docs.length; yearIndex++) {
+            const years = querySnapshotYears.docs;
+            const yearRef = db.collection("years").doc(years[yearIndex].id);
+            //add new year object
+            notesData.years[yearIndex] = {
+              yearId: years[yearIndex].id,
+              months: []
+            };
+
+            yearRef
+              .collection("months")
+              .get()
+              .then((querySnapshotMonths) => {
+                for (let monthIndex = 0; monthIndex < querySnapshotMonths.docs.length; monthIndex++) {
+                  const months = querySnapshotMonths.docs;
+                  const monthRef = yearRef.collection("months").doc(months[monthIndex].id)
+                  notesData.years[yearIndex].months[monthIndex] = {
+                    monthId: months[monthIndex].id,
+                    days: []
+
+                  };
+
+                  monthRef
+                    .collection("days")
+                    .get()
+                    .then((querySnapshotDays) => {
+                      for (let dayIndex = 0; dayIndex < querySnapshotDays.docs.length; dayIndex++) {
+                        const days = querySnapshotDays.docs;
+                        const dayRef = monthRef.collection("days").doc(days[dayIndex].id);
+                        notesData.years[yearIndex].months[monthIndex].days[dayIndex] = {
+                          dayId: days[dayIndex].id,
+                          notes: []
+
+                        };
+
+                        dayRef
+                          .collection("notes")
+                          .get()
+                          .then((querySnapshotNotes) => {
+                            for (let noteIndex = 0; noteIndex < querySnapshotNotes.docs.length; noteIndex++) {
+                              const notes = querySnapshotNotes.docs;
+                              if (querySnapshotNotes.empty) {
+                                console.log("empty")
+                                continue;
+                              }
+                              // console.log("before set", noteList.length)
+                              // console.log("year-month-day-note", year.id, '-', month.id, '-', day.id, '-', note.id)
+                              notesData.years[yearIndex].months[monthIndex].days[dayIndex].notes[noteIndex] = {...notes[noteIndex].data(),noteId:notes[noteIndex].id};
+
+                              tempNoteList[tempNoteList.length] = notes[noteIndex].data()
+                              setNoteList(notesData)
+
+                            }
+                          })
+                      }
+
+                    })
+
+                }
+              })
+          }
+
+        })
+    }
+  }
+  // if(i<1 && )
+  fetchAllNotes();
+
+  function pad(d) {
+    return (d < 10) ? '0' + d.toString() : d.toString();
+  }
+
+  const handleSave = () => (e) => {
 
 
+    //also note date
 
-    //grab all notes in one day
-    const fetchNotes = (year, month, day) => {
-        const yearRef = db.collection("years").doc(year);
-        const monthRef = yearRef.collection("months").doc(month);
-        const dayRef = monthRef.collection("days").doc(day);
+    setNoteHeader(document.getElementById("note-title").value);
+    setNoteContent(document.getElementById("note-content").value);
 
-        let notes = [];
-        dayRef.collection("notes").get().then((querySnapshot) => {
-            for (let doc_item of querySnapshot.docs) {
-                // console.log(doc_item.data())
-            }
-        }).catch((error) => {
-            console.log("Error getting documents: ", error);
-        });
+    let dateChoice = document.getElementById("note-date").value.split("-");
+
+    let dateChoiceObject = {
+      year: dateChoice[0],
+      month: dateChoice[1],
+      day: dateChoice[2],
     }
 
-    // let allNotes = [];
+    setNoteDate(dateChoiceObject)
 
-    const fetchAllNotes = () => {
 
-        let tempNoteList = [];
-        //add resolve to handle caching l8er
+    const saveTime = new Date() //going to leave this here for later
 
-        //check if noteList state is empty
-        if (noteList.length == 0) {
-            db
-                .collection("years")
-                .get()
-                .then((querySnapshotYears) => {
-                    for (let year of querySnapshotYears.docs) {
+    const saveYear = saveTime.getFullYear();
+    const saveMonth = saveTime.getMonth() + 1;
+    const saveDay = saveTime.getDay();
+    const saveHour = saveTime.getHours();
+    const saveMinutes = saveTime.getMinutes();
+    const saveSeconds = saveTime.getSeconds();
+    const saveMilliseconds = saveTime.getMilliseconds();
 
-                        const yearRef = db.collection("years").doc(year.id);
-
-                        yearRef
-                            .collection("months")
-                            .get()
-                            .then((querySnapshotMonths) => {
-                                for (let month of querySnapshotMonths.docs) {
-
-                                    const monthRef = yearRef.collection("months").doc(month.id);
-
-                                    monthRef
-                                        .collection("days")
-                                        .get()
-                                        .then((querySnapshotDays) => {
-                                            for (let day of querySnapshotDays.docs) {
-                                                const dayRef = monthRef.collection("days").doc(day.id);
-                                                dayRef
-                                                    .collection("notes")
-                                                    .get()
-                                                    .then((querySnapshotNotes) => {
-                                                        for (let note of querySnapshotNotes.docs) {
-                                                            if (querySnapshotNotes.empty) {
-                                                                console.log("empty")
-                                                                continue;
-                                                            }
-                                                            console.log("before set", noteList.length)
-                                                            console.log("year-month-day-note", year.id, '-', month.id, '-', day.id, '-', note.id)
-                                                            tempNoteList[tempNoteList.length] = note.data()
-                                                            setNoteList(tempNoteList)
-
-                                                        }
-                                                    })
-                                            }
-
-                                        })
-
-                                }
-                            })
-                    }
-                })
-        }
-        console.log("noteListAtEndOfFunction", noteList)
-    }
-    // if(i<1 && )
-    fetchAllNotes();
-    console.log("after everything?", noteList)
-    //need a function to transfrom allNotes array into objects.. nvm they are literally already objects 
-
-    // const fetchDays = () => {
-
-    // }
-
-    // const fetchMonths = () => {
-
-    // }
-
-    // const fetchYears = () => {
-
-    // }
-    function pad(d) {
-        return (d < 10) ? '0' + d.toString() : d.toString();
+    const saveTimeObject = {
+      year: saveYear,
+      month: saveMonth,
+      day: saveDay,
+      hour: saveHour,
+      minutes: saveMinutes,
+      seconds: saveSeconds,
+      milliseconds: saveMilliseconds
     }
 
-    const handleSave = () => (e) => {
 
+    const yearRefNow = db.collection("years").doc(noteDate.year);
+    const monthRefNow = yearRefNow.collection("months").doc(noteDate.month);
+    const dayRefNow = monthRefNow.collection("days").doc(noteDate.day);
 
-        //also note date
+    const notesPromise = dayRefNow.collection("notes").get()
 
-        setNoteHeader(document.getElementById("note-title").value);
-        setNoteContent(document.getElementById("note-content").value);
+    let size = 0;
+    notesPromise.then(snapshot => {
 
-        let dateChoice = document.getElementById("note-date").value.split("-");
+      size = snapshot.size;
 
-        let dateChoiceObject = {
-            year: dateChoice[0],
-            month: dateChoice[1],
-            day: dateChoice[2],
-        }
+      yearRefNow.set({
+        dateField: noteDate.year
+      })
+      monthRefNow.set({
+        monthField: noteDate.month
+      })
+      dayRefNow.set({
+        dayField: noteDate.day
+      })
+      dayRefNow.collection("notes").doc(size.toString()).set({
+        header: noteHeader,
+        body: noteContent,
+        noteDate: noteDate,
+        addedTime: saveTimeObject
+      });
 
-        setNoteDate(dateChoiceObject)
+    });
 
+    e.preventDefault();
 
-        const saveTime = new Date() //going to leave this here for later
+  }
 
-        const saveYear = saveTime.getFullYear();
-        const saveMonth = saveTime.getMonth() + 1;
-        const saveDay = saveTime.getDay();
-        const saveHour = saveTime.getHours();
-        const saveMinutes = saveTime.getMinutes();
-        const saveSeconds = saveTime.getSeconds();
-        const saveMilliseconds = saveTime.getMilliseconds();
+  const handleClear = {};
 
-        const saveTimeObject = {
-            year: saveYear,
-            month: saveMonth,
-            day: saveDay,
-            hour: saveHour,
-            minutes: saveMinutes,
-            seconds: saveSeconds,
-            milliseconds: saveMilliseconds
-        }
+  const handleLeave = {};
 
-
-        const yearRefNow = db.collection("years").doc(noteDate.year);
-        const monthRefNow = yearRefNow.collection("months").doc(noteDate.month);
-        const dayRefNow = monthRefNow.collection("days").doc(noteDate.day);
-
-        const notesPromise = dayRefNow.collection("notes").get()
-
-        let size = 0;
-        notesPromise.then(snapshot => {
-
-            size = snapshot.size;
-
-            yearRefNow.set({
-                dateField: noteDate.year
-            })
-            monthRefNow.set({
-                monthField: noteDate.month
-            })
-            dayRefNow.set({
-                dayField: noteDate.day
-            })
-            dayRefNow.collection("notes").doc(size.toString()).set({
-                header: noteHeader,
-                body: noteContent,
-                noteDate: noteDate,
-                addedTime: saveTimeObject
-            });
-
-        });
-
-        e.preventDefault();
-
-    }
-
-    const handleClear = {};
-
-    const handleLeave = {};
-
-
-    return (
-        //need to have a navigation, a dtails bar, a title, an input, and enter buton to save, a close button.
-        <ErrorBoundary>
+  return (
+    //need to have a navigation, a dtails bar, a title, an input, and enter buton to save, a close button.
+    <ErrorBoundary>
       <div className="wrap">
         <header>
           <nav style={{textAlign:"center"}}>
@@ -262,30 +367,14 @@ function App() {
         <div id="notes-list">
           <ul>
             {/*grab database notes and map to list*/}
-
-            <ul>{noteList.map(note =>
-            <div className="note">
-              <h1>{note.header}</h1>
-              <p>{note.body}</p>
-              <div className="note-date">
-              <h3>Note Date</h3>
-                <p>{note.noteDate.year}</p>
-                <p>{note.noteDate.month}</p>
-                <p>{note.noteDate.day}</p>
-              </div>
-              <div className="save-date">
-                <h3>Added on</h3>
-                <em>{note.addedTime.year}-{note.addedTime.month}-{note.addedTime.day} at {note.addedTime.hour}:{note.addedTime.minutes}{note.addedTime.hour>12 ? "PM" : "AM"} [sec,mili]-[{note.addedTime.seconds}:{note.addedTime.milliseconds}]</em>
-              </div>
-            </div>
-            )}</ul>
-            <li>{console.log("noteListInDom",noteList[0])}</li>
-            <li>{}</li>
+            {/**/}
+            <ul>{console.log("noteList.years",(noteList ? noteList : "not here!"))}</ul>
+            <ul><DomNoteList noteList={noteList}/></ul>
           </ul>
         </div>
       </div>
     </ErrorBoundary>
-    );
+  );
 }
 
 export default App;
